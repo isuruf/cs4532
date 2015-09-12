@@ -21,8 +21,11 @@ double B[SIZE][SIZE];
 double C[SIZE][SIZE];
 
 double serial();
+
 double naive();
+
 double transpose();
+
 double transpose2();
 
 int threads;
@@ -100,7 +103,7 @@ double transpose() {
     for (int i = 0; i < SIZE; i++) {
         double temp;
         for (int j = i + 1; j < SIZE; j++) {
-            temp = B[j][i];
+            temp = B[i][j];
             B[i][j] = B[j][i];
             B[j][i] = temp;
         }
@@ -110,7 +113,7 @@ double transpose() {
         for (int j = 0; j < SIZE; j++) {
             C[i][j] = 0;
             for (int k = 0; k < SIZE; k++) {
-                C[i][j] += A[i][k] * C[j][k];
+                C[i][j] += A[i][k] * B[j][k];
             }
         }
     }
@@ -124,30 +127,26 @@ double transpose2() {
 
     auto t1 = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for
-    for (int is = 0; is < SIZE; is += threads) {
-#pragma omp parallel for
-        for (int j = 0; j < SIZE; ++j) {
-            double temp;
-            for (int i = is; i < is + threads && i < SIZE; ++i) {
-                temp = B[j][i];
-                B[i][j] = B[j][i];
-                B[j][i] = temp;
-            }
+    for (int i = 0; i < SIZE; i++) {
+        double temp;
+        for (int j = i; j < SIZE; j++) {
+            temp = B[i][j];
+            B[i][j] = B[j][i];
+            B[j][i] = temp;
+            C[i][j] = 0;
+            C[j][i] = 0;
         }
     }
 
 #pragma omp parallel for
-    for (int is = 0; is < SIZE; is += threads) {
-#pragma omp parallel for
-        for (int j = 0; j < SIZE; ++j) {
-            for (int i = is; i < is + threads && i < SIZE; ++i) {
-                for (int k = 0; k < SIZE; ++k)
-                    C[i][j] += A[i][k] * B[j][k];
-            }
-        }
-    }
+    for (int is2 = 0; is2 < SIZE; is2 += SIZE/threads)
+        for (int is = is2; is < is2 + SIZE/threads && is < SIZE; is+= threads)
+            for (int j = 0; j < SIZE; j++)
+                for (int i = is; i < is + threads && i < SIZE; ++i)
+                    for (int k = 0; k < SIZE; ++k)
+                        C[i][j] += A[i][k] * B[j][k];
+
 
     auto t2 = std::chrono::high_resolution_clock::now();
     return chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
-    //cout << chrono::duration_cast<chrono::microseconds>(t2-t1).count() << endl;
 }
