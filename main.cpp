@@ -30,7 +30,7 @@ double transpose2();
 
 double transpose4();
 
-int threads;
+int blockSize;
 
 int main(int argc, char *argv[]) {
     for (int i = 0; i < SIZE; i++) {
@@ -42,10 +42,10 @@ int main(int argc, char *argv[]) {
     }
 
 #pragma omp parallel
-    threads = omp_get_num_threads();
+    blockSize = omp_get_num_threads();
 
 
-    double a, b, c, d;
+    double a, b, c, d,e;
     a = serial();
     cout << a << endl;
     b = naive();
@@ -137,11 +137,11 @@ double transpose4() {
     auto t1 = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel for
-    for (int is = 0; is < SIZE; is += threads) {
-        for (int i = is; i < is + threads && i < SIZE; ++i) {
+    for (int is = 0; is < SIZE; is += blockSize) {
+        for (int i = is; i < is + blockSize && i < SIZE; ++i) {
 #pragma omp parallel for
-            for (int is2 = 0; is2 < i; is2 += threads) {
-                for (int j = is2; j < is2 + threads && j <  i; ++j) {
+            for (int is2 = 0; is2 < i; is2 += blockSize) {
+                for (int j = is2; j < is2 + blockSize && j <  i; ++j) {
                     double temp=B[i][j];
                     B[i][j]=B[j][i];
                     B[j][i] =temp;
@@ -155,11 +155,11 @@ double transpose4() {
 
 
 #pragma omp parallel for
-    for (int is = 0; is < SIZE; is += threads) {
+    for (int is = 0; is < SIZE; is += blockSize) {
 #pragma omp parallel for
-        for (int is2 = 0; is2 < SIZE; is2 += threads) {
-            for (int j = is2; j < is2 + threads && j < SIZE; ++j) {
-                for (int i = is; i < is + threads && i < SIZE; ++i) {
+        for (int is2 = 0; is2 < SIZE; is2 += blockSize) {
+            for (int j = is2; j < is2 + blockSize && j < SIZE; ++j) {
+                for (int i = is; i < is + blockSize && i < SIZE; ++i) {
                     double sum=0;
                     //#pragma omp parallel for reduction(+:sum)
                     for (int k = 0; k < SIZE; ++k)
@@ -193,10 +193,10 @@ double transpose2() {
     }
 
 #pragma omp parallel for
-    for (int is2 = 0; is2 < SIZE; is2 += SIZE/threads)
-        for (int is = is2; is < is2 + SIZE/threads && is < SIZE; is+= threads)
+    for (int is2 = 0; is2 < SIZE; is2 += SIZE/ blockSize)
+        for (int is = is2; is < is2 + SIZE/ blockSize && is < SIZE; is+= blockSize)
             for (int j = 0; j < SIZE; j++)
-                for (int i = is; i < is + threads && i < SIZE; ++i)
+                for (int i = is; i < is + blockSize && i < SIZE; ++i)
                     for (int k = 0; k < SIZE; ++k)
                         C[i][j] += A[i][k] * B[j][k];
 
