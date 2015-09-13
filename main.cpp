@@ -28,6 +28,8 @@ double transpose();
 
 double transpose2();
 
+double transpose4();
+
 int threads;
 
 int main(int argc, char *argv[]) {
@@ -52,8 +54,14 @@ int main(int argc, char *argv[]) {
     cout << c << endl;
     d = transpose2();
     cout << d << endl;
+    e = transpose4();
+    cout << e << endl;
+
+
     cout << a / c << endl;
     cout << a / d << endl;
+    cout << a / e << endl;
+
 }
 
 double serial() {
@@ -123,6 +131,52 @@ double transpose() {
     //cout << chrono::duration_cast<chrono::microseconds>(t2-t1).count() << endl;
 }
 
+
+double transpose4() {
+//adding regions for both loops
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+#pragma omp parallel for
+    for (int is = 0; is < SIZE; is += threads) {
+        for (int i = is; i < is + threads && i < SIZE; ++i) {
+#pragma omp parallel for
+            for (int is2 = 0; is2 < i; is2 += threads) {
+                for (int j = is2; j < is2 + threads && j <  i; ++j) {
+                    double temp=B[i][j];
+                    B[i][j]=B[j][i];
+                    B[j][i] =temp;
+                    C[i][j]=0;
+                    C[j][i]=0;
+                }
+            }
+        }
+    }
+
+
+
+#pragma omp parallel for
+    for (int is = 0; is < SIZE; is += threads) {
+#pragma omp parallel for
+        for (int is2 = 0; is2 < SIZE; is2 += threads) {
+            for (int j = is2; j < is2 + threads && j < SIZE; ++j) {
+                for (int i = is; i < is + threads && i < SIZE; ++i) {
+                    double sum=0;
+                    //#pragma omp parallel for reduction(+:sum)
+                    for (int k = 0; k < SIZE; ++k)
+                        sum += A[i][k] *B[j][k];
+
+                    C[i][j]=sum;
+
+                }
+            }
+        }
+    }
+
+
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    return chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
+}
 double transpose2() {
 
     auto t1 = std::chrono::high_resolution_clock::now();
