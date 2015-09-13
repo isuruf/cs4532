@@ -1,28 +1,22 @@
 /*
- * g++ -O3 -ffast-math -fwrapv -ftree-loop-optimize -ftree-loop-vectorize
- *     -std=c++11 main.cpp -fopenmp -DSIZE=1000
+ * g++ -O3 -ffast-math -fwrapv -std=c++11 main.cpp -DSIZE=1000
  * ./a.out
  */
 
-
-
 #include <iostream>
-#include <vector>
 #include <chrono>
-
 
 #ifndef SIZE
 #define SIZE 1000
 #endif
+
 
 using namespace std;
 double A[SIZE][SIZE];
 double B[SIZE][SIZE];
 double C[SIZE][SIZE];
 
-double serial();
-
-
+double multiply_serial();
 
 int main(int argc, char *argv[]) {
     for (int i = 0; i < SIZE; i++) {
@@ -32,15 +26,11 @@ int main(int argc, char *argv[]) {
             C[i][j] = rand();
         }
     }
-
-
-    double a;
-    a = serial();
+    double a = multiply_serial();
     cout << a << endl;
-
 }
 
-double serial() {
+double multiply_serial() {
 
     auto t1 = std::chrono::high_resolution_clock::now();
     int i, j;
